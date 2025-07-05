@@ -1,38 +1,40 @@
 @page "/markets"
+@using TradingDashboard.Client.Services
 @inject MarketDataService MarketDataService
+@inject LocalizationService LocalizationService
 @inject IJSRuntime JSRuntime
 @implements IDisposable
 
-<PageTitle>Marchés - Trading Dashboard</PageTitle>
+<PageTitle>@LocalizationService.GetString("Markets") - @LocalizationService.GetString("TradingDashboard")</PageTitle>
 
 <div class="markets-page">
     <div class="markets-header">
-        <h1>Marchés financiers</h1>
+        <h1>@LocalizationService.GetString("Markets")</h1>
         <div class="markets-controls">
             <div class="category-filters">
                 <button class="filter-btn @GetFilterClass(null)" @onclick="() => SetCategory(null)">
-                    📊 Tous
+                    📊 @LocalizationService.GetString("All")
                 </button>
                 <button class="filter-btn @GetFilterClass(MarketCategory.Indices)" @onclick="() => SetCategory(MarketCategory.Indices)">
-                    📈 Indices
+                    📈 @LocalizationService.GetString("Indices")
                 </button>
                 <button class="filter-btn @GetFilterClass(MarketCategory.Crypto)" @onclick="() => SetCategory(MarketCategory.Crypto)">
-                    ₿ Crypto
+                    ₿ @LocalizationService.GetString("Crypto")
                 </button>
                 <button class="filter-btn @GetFilterClass(MarketCategory.Commodities)" @onclick="() => SetCategory(MarketCategory.Commodities)">
-                    🥇 Matières premières
+                    🥇 @LocalizationService.GetString("Commodities")
                 </button>
                 <button class="filter-btn @GetFilterClass(MarketCategory.Bonds)" @onclick="() => SetCategory(MarketCategory.Bonds)">
-                    🏛️ Obligations
+                    🏛️ @LocalizationService.GetString("Bonds")
                 </button>
             </div>
             
             <div class="view-controls">
                 <button class="view-btn @GetViewClass("grid")" @onclick="() => SetView("grid")">
-                    ⊞ Grille
+                    ⊞ @LocalizationService.GetString("Grid")
                 </button>
                 <button class="view-btn @GetViewClass("list")" @onclick="() => SetView("list")">
-                    ☰ Liste
+                    ☰ @LocalizationService.GetString("List")
                 </button>
             </div>
         </div>
@@ -40,7 +42,7 @@
 
     @if (IsLoading)
     {
-        <LoadingSpinner Text="Chargement des données de marché..." Size="lg" />
+        <LoadingSpinner Text='@LocalizationService.GetString("Loading")' Size="lg" />
     }
     else
     {
@@ -54,8 +56,8 @@
                         @GetCategoryName(SelectedCategory.Value)
                     </h2>
                     <div class="category-stats">
-                        <span class="stat">@GetFilteredData().Count actifs</span>
-                        <span class="stat">@GetCategoryPerformance() performance moyenne</span>
+                        <span class="stat">@GetFilteredData().Count @LocalizationService.GetString("All")</span>
+                        <span class="stat">@GetCategoryPerformance() @LocalizationService.GetString("MarketPerformance")</span>
                     </div>
                 </div>
                 
@@ -91,16 +93,16 @@
                     }
                     else
                     {
-                        <text>Tous les actifs (@GetFilteredData().Count)</text>
+                        <text>@LocalizationService.GetString("AllAssets") (@GetFilteredData().Count)</text>
                     }
                 </h3>
                 
                 <div class="sort-controls">
                     <select @bind="SortBy" class="form-select">
-                        <option value="name">Nom</option>
-                        <option value="price">Prix</option>
-                        <option value="change">Variation</option>
-                        <option value="changePercent">Variation %</option>
+                        <option value="name">@LocalizationService.GetString("Name")</option>
+                        <option value="price">@LocalizationService.GetString("Price")</option>
+                        <option value="change">@LocalizationService.GetString("Change")</option>
+                        <option value="changePercent">@LocalizationService.GetString("Change") %</option>
                     </select>
                     <button class="sort-direction-btn" @onclick="ToggleSortDirection">
                         @(SortAscending ? "↑" : "↓")
@@ -138,7 +140,7 @@
                             
                             <div class="asset-actions">
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => HandleAssetClick(kvp.Value)">
-                                    Détails
+                                    @LocalizationService.GetString("Details")
                                 </button>
                             </div>
                         </div>
@@ -151,10 +153,10 @@
                 <div class="no-data">
                     <div class="no-data-content">
                         <div class="no-data-icon">📊</div>
-                        <h4>Aucun actif trouvé</h4>
-                        <p>Aucun actif ne correspond aux critères sélectionnés.</p>
+                        <h4>@LocalizationService.GetString("NoAssetsFound")</h4>
+                        <p>@LocalizationService.GetString("NoAssetsMessage")</p>
                         <button class="btn btn-primary" @onclick="() => SetCategory(null)">
-                            Voir tous les actifs
+                            @LocalizationService.GetString("ViewAllAssets")
                         </button>
                     </div>
                 </div>

@@ -1,43 +1,63 @@
+@using TradingDashboard.Client.Services
+@inject LocalizationService LocalizationService
+@implements IDisposable
+
 <div class="nav-menu">
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
                 <span class="nav-icon">🏠</span>
-                <span class="nav-text">Dashboard</span>
+                <span class="nav-text">@LocalizationService.GetString("Dashboard")</span>
             </NavLink>
         </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="/markets">
                 <span class="nav-icon">📊</span>
-                <span class="nav-text">Marchés</span>
+                <span class="nav-text">@LocalizationService.GetString("Markets")</span>
             </NavLink>
         </div>
         
         <div class="nav-section">
-            <h6 class="nav-section-title">Catégories</h6>
+            <h6 class="nav-section-title">@LocalizationService.GetString("All")</h6>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/markets?category=indices">
                     <span class="nav-icon">📈</span>
-                    <span class="nav-text">Indices</span>
+                    <span class="nav-text">@LocalizationService.GetString("Indices")</span>
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/markets?category=crypto">
                     <span class="nav-icon">₿</span>
-                    <span class="nav-text">Crypto</span>
+                    <span class="nav-text">@LocalizationService.GetString("Crypto")</span>
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/markets?category=commodities">
                     <span class="nav-icon">🥇</span>
-                    <span class="nav-text">Matières premières</span>
+                    <span class="nav-text">@LocalizationService.GetString("Commodities")</span>
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="/markets?category=bonds">
                     <span class="nav-icon">🏛️</span>
-                    <span class="nav-text">Obligations</span>
+                    <span class="nav-text">@LocalizationService.GetString("Bonds")</span>
                 </NavLink>
+            </div>
+        </div>
+        
+        <div class="nav-section">
+            <h6 class="nav-section-title">@LocalizationService.GetString("Language")</h6>
+            <div class="nav-item px-3">
+                <div class="language-selector">
+                    <button class="language-btn @(LocalizationService.CurrentLanguage == "fr" ? "active" : "")" 
+                            @onclick='() => SetLanguage("fr")'>
+                        🇫🇷 FR
+                    </button>
+                    <button class="language-btn @(LocalizationService.CurrentLanguage == "en" ? "active" : "")" 
+                            @onclick='() => SetLanguage("en")'>
+                        🇬🇧 EN
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -104,6 +124,36 @@
     .nav-text {
         flex: 1;
     }
+
+    .language-selector {
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .language-btn {
+        flex: 1;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid var(--border-color);
+        background: var(--card-bg);
+        color: var(--text-color);
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+
+    .language-btn:hover {
+        background: var(--nav-hover-bg);
+        border-color: var(--primary-color);
+    }
+
+    .language-btn.active {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
 </style>
 
 @code {
@@ -114,5 +164,27 @@
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private async Task SetLanguage(string languageCode)
+    {
+        await LocalizationService.SetLanguageAsync(languageCode);
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LocalizationService.InitializeAsync();
+        LocalizationService.OnLanguageChanged += OnLanguageChanged;
+    }
+
+    private void OnLanguageChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        LocalizationService.OnLanguageChanged -= OnLanguageChanged;
     }
 } 

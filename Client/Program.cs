@@ -13,5 +13,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // Services métier
 builder.Services.AddScoped<MarketDataService>();
 builder.Services.AddScoped<ThemeService>();
+builder.Services.AddScoped<LocalizationService>();
 
 await builder.Build().RunAsync();

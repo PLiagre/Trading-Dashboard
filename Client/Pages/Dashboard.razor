@@ -1,24 +1,26 @@
 @page "/"
+@using TradingDashboard.Client.Services
 @inject MarketDataService MarketDataService
+@inject LocalizationService LocalizationService
 @implements IDisposable
 
-<PageTitle>Dashboard - Trading Dashboard</PageTitle>
+<PageTitle>@LocalizationService.GetString("Dashboard") - @LocalizationService.GetString("TradingDashboard")</PageTitle>
 
 <div class="dashboard">
     <div class="dashboard-header">
-        <h1>Vue d'ensemble des marchés</h1>
+        <h1>@LocalizationService.GetString("MarketOverview")</h1>
         <div class="market-status">
             <span class="status-indicator @GetMarketStatusClass()"></span>
             <span class="status-text">@GetMarketStatusText()</span>
             <small class="last-update">
-                Dernière mise à jour : @DateTime.Now.ToString("HH:mm:ss")
+                @LocalizationService.GetString("LastUpdate") : @DateTime.Now.ToString("HH:mm:ss")
             </small>
         </div>
     </div>
 
     @if (IsLoading)
     {
-        <LoadingSpinner Text="Chargement des données de marché..." Size="lg" />
+        <LoadingSpinner Text='@LocalizationService.GetString("Loading")' Size="lg" />
     }
     else
     {
@@ -48,7 +50,7 @@
             <div class="charts-row">
                 <div class="chart-container">
                     <MultiChart 
-                        Title="Tendances des actifs principaux (7 jours)"
+                        Title="@LocalizationService.GetString("MarketPerformance")"
                         ChartData="@GetMainAssetsChartData()"
                         IsLoading="@IsLoading" />
                 </div>
@@ -57,7 +59,7 @@
             <div class="charts-row">
                 <div class="chart-container">
                     <BondYieldChart 
-                        Title="Rendements obligataires"
+                        Title="@LocalizationService.GetString("BondYields")"
                         BondData="@GetBondData()"
                         HistoricalData="@GetBondHistoricalData()"
                         IsLoading="@IsLoading" />
@@ -71,28 +73,28 @@
                 <div class="stat-card positive">
                     <div class="stat-icon">📈</div>
                     <div class="stat-content">
-                        <h4>Actifs en hausse</h4>
+                        <h4>@LocalizationService.GetString("AssetsUp")</h4>
                         <span class="stat-value">@GetPositiveAssetsCount()</span>
                     </div>
                 </div>
                 <div class="stat-card negative">
                     <div class="stat-icon">📉</div>
                     <div class="stat-content">
-                        <h4>Actifs en baisse</h4>
+                        <h4>@LocalizationService.GetString("AssetsDown")</h4>
                         <span class="stat-value">@GetNegativeAssetsCount()</span>
                     </div>
                 </div>
                 <div class="stat-card neutral">
                     <div class="stat-icon">⚖️</div>
                     <div class="stat-content">
-                        <h4>Volatilité moyenne</h4>
+                        <h4>@LocalizationService.GetString("AverageVolatility")</h4>
                         <span class="stat-value">@GetAverageVolatility()%</span>
                     </div>
                 </div>
                 <div class="stat-card info">
                     <div class="stat-icon">🔄</div>
                     <div class="stat-content">
-                        <h4>Dernière mise à jour</h4>
+                        <h4>@LocalizationService.GetString("LastUpdateTime")</h4>
                         <span class="stat-value">@GetLastUpdateTime()</span>
                     </div>
                 </div>
