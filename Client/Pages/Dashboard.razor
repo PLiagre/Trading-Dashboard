@@ -1,0 +1,427 @@
+@page "/"
+@inject MarketDataService MarketDataService
+@implements IDisposable
+
+<PageTitle>Dashboard - Trading Dashboard</PageTitle>
+
+<div class="dashboard">
+    <div class="dashboard-header">
+        <h1>Vue d'ensemble des marchés</h1>
+        <div class="market-status">
+            <span class="status-indicator @GetMarketStatusClass()"></span>
+            <span class="status-text">@GetMarketStatusText()</span>
+            <small class="last-update">
+                Dernière mise à jour : @DateTime.Now.ToString("HH:mm:ss")
+            </small>
+        </div>
+    </div>
+
+    @if (IsLoading)
+    {
+        <LoadingSpinner Text="Chargement des données de marché..." Size="lg" />
+    }
+    else
+    {
+        <!-- Résumé des actifs principaux -->
+        <div class="market-summary">
+            <div class="summary-cards">
+                @foreach (var category in new[] { MarketCategory.Indices, MarketCategory.Crypto, MarketCategory.Commodities, MarketCategory.Bonds })
+                {
+                    <div class="category-summary">
+                        <h3 class="category-title">
+                            @GetCategoryIcon(category)
+                            @GetCategoryName(category)
+                        </h3>
+                        <div class="category-grid">
+                            @foreach (var kvp in GetDataByCategory(category))
+                            {
+                                <MarketCard Data="kvp.Value" ShowMiniChart="true" OnClick="HandleCardClick" />
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Graphiques de tendances -->
+        <div class="dashboard-charts">
+            <div class="charts-row">
+                <div class="chart-container">
+                    <MultiChart 
+                        Title="Tendances des actifs principaux (7 jours)"
+                        ChartData="@GetMainAssetsChartData()"
+                        IsLoading="@IsLoading" />
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-container">
+                    <BondYieldChart 
+                        Title="Rendements obligataires"
+                        BondData="@GetBondData()"
+                        HistoricalData="@GetBondHistoricalData()"
+                        IsLoading="@IsLoading" />
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques du marché -->
+        <div class="market-stats">
+            <div class="stats-grid">
+                <div class="stat-card positive">
+                    <div class="stat-icon">📈</div>
+                    <div class="stat-content">
+                        <h4>Actifs en hausse</h4>
+                        <span class="stat-value">@GetPositiveAssetsCount()</span>
+                    </div>
+                </div>
+                <div class="stat-card negative">
+                    <div class="stat-icon">📉</div>
+                    <div class="stat-content">
+                        <h4>Actifs en baisse</h4>
+                        <span class="stat-value">@GetNegativeAssetsCount()</span>
+                    </div>
+                </div>
+                <div class="stat-card neutral">
+                    <div class="stat-icon">⚖️</div>
+                    <div class="stat-content">
+                        <h4>Volatilité moyenne</h4>
+                        <span class="stat-value">@GetAverageVolatility()%</span>
+                    </div>
+                </div>
+                <div class="stat-card info">
+                    <div class="stat-icon">🔄</div>
+                    <div class="stat-content">
+                        <h4>Dernière mise à jour</h4>
+                        <span class="stat-value">@GetLastUpdateTime()</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .dashboard {
+        padding: 2rem 0;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .dashboard-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    .market-status {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.5rem;
+    }
+
+    .status-indicator {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+        animation: pulse 2s infinite;
+    }
+
+    .status-indicator.active {
+        background: var(--success-color);
+    }
+
+    .status-indicator.inactive {
+        background: var(--danger-color);
+    }
+
+    .status-text {
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .last-update {
+        color: var(--text-muted);
+        font-size: 0.85rem;
+    }
+
+    .market-summary {
+        margin-bottom: 3rem;
+    }
+
+    .summary-cards {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+
+    .category-summary {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 2rem;
+    }
+
+    .category-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .dashboard-charts {
+        margin-bottom: 3rem;
+    }
+
+    .charts-row {
+        margin-bottom: 2rem;
+    }
+
+    .chart-container {
+        background: var(--card-bg);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
+    .market-stats {
+        margin-bottom: 2rem;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .stat-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .stat-card.positive {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .stat-card.negative {
+        border-left: 4px solid var(--danger-color);
+    }
+
+    .stat-card.neutral {
+        border-left: 4px solid var(--warning-color);
+    }
+
+    .stat-card.info {
+        border-left: 4px solid var(--info-color);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg-secondary);
+        border-radius: 50%;
+    }
+
+    .stat-content h4 {
+        margin: 0 0 0.5rem 0;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .dashboard-header h1 {
+            font-size: 2rem;
+        }
+
+        .market-status {
+            align-items: flex-start;
+        }
+
+        .category-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        }
+    }
+</style>
+
+@code {
+    private Dictionary<string, MarketData> _marketData = new();
+    private Dictionary<string, List<ChartPoint>> _historicalData = new();
+    private bool IsLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+        MarketDataService.DataUpdated += OnDataUpdated;
+    }
+
+    private async Task LoadData()
+    {
+        await Task.Delay(1000); // Simulation du chargement
+        
+        _marketData = MarketDataService.GetAllMarketData();
+        _historicalData = MarketDataService.GetHistoricalDataForSymbols(_marketData.Keys.ToArray());
+        
+        IsLoading = false;
+        StateHasChanged();
+    }
+
+    private void OnDataUpdated()
+    {
+        _marketData = MarketDataService.GetAllMarketData();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private Dictionary<string, MarketData> GetDataByCategory(MarketCategory category)
+    {
+        return _marketData.Where(kvp => kvp.Value.Category == category)
+                         .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+    }
+
+    private Dictionary<string, List<ChartPoint>> GetMainAssetsChartData()
+    {
+        var mainAssets = new[] { "BTC", "ETH", "CAC40", "SP500" };
+        return _historicalData.Where(kvp => mainAssets.Contains(kvp.Key))
+                             .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+    }
+
+    private Dictionary<string, MarketData> GetBondData()
+    {
+        return GetDataByCategory(MarketCategory.Bonds);
+    }
+
+    private Dictionary<string, List<ChartPoint>> GetBondHistoricalData()
+    {
+        var bondSymbols = GetBondData().Keys.ToArray();
+        return _historicalData.Where(kvp => bondSymbols.Contains(kvp.Key))
+                             .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+    }
+
+    private string GetCategoryIcon(MarketCategory category)
+    {
+        return category switch
+        {
+            MarketCategory.Indices => "📈",
+            MarketCategory.Crypto => "₿",
+            MarketCategory.Commodities => "🥇",
+            MarketCategory.Bonds => "🏛️",
+            _ => "📊"
+        };
+    }
+
+    private string GetCategoryName(MarketCategory category)
+    {
+        return category switch
+        {
+            MarketCategory.Indices => "Indices",
+            MarketCategory.Crypto => "Cryptomonnaies",
+            MarketCategory.Commodities => "Matières premières",
+            MarketCategory.Bonds => "Obligations",
+            _ => "Autres"
+        };
+    }
+
+    private string GetMarketStatusClass()
+    {
+        return DateTime.Now.Hour >= 9 && DateTime.Now.Hour < 18 ? "active" : "inactive";
+    }
+
+    private string GetMarketStatusText()
+    {
+        return DateTime.Now.Hour >= 9 && DateTime.Now.Hour < 18 ? "Marchés ouverts" : "Marchés fermés";
+    }
+
+    private int GetPositiveAssetsCount()
+    {
+        return _marketData.Values.Count(d => d.ChangePercent > 0);
+    }
+
+    private int GetNegativeAssetsCount()
+    {
+        return _marketData.Values.Count(d => d.ChangePercent < 0);
+    }
+
+    private string GetAverageVolatility()
+    {
+        if (!_marketData.Any()) return "0.0";
+        
+        var avgVolatility = _marketData.Values.Average(d => Math.Abs(d.ChangePercent));
+        return avgVolatility.ToString("F1");
+    }
+
+    private string GetLastUpdateTime()
+    {
+        if (!_marketData.Any()) return "N/A";
+        
+        var lastUpdate = _marketData.Values.Max(d => d.LastUpdated);
+        return lastUpdate.ToString("HH:mm");
+    }
+
+    private async Task HandleCardClick(MarketData data)
+    {
+        // Navigation vers la page Markets avec le filtre de catégorie
+        // Pour l'instant, on peut juste afficher une notification
+        await Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        MarketDataService.DataUpdated -= OnDataUpdated;
+    }
+} 

@@ -1,0 +1,557 @@
+@* Graphique spécialisé pour les rendements obligataires *@
+
+<div class="bond-yield-chart-container">
+    <div class="chart-header">
+        <h3 class="chart-title">@Title</h3>
+        <div class="chart-controls">
+            <select @bind="SelectedPeriod" class="form-select period-selector">
+                <option value="7">7 jours</option>
+                <option value="30">30 jours</option>
+                <option value="90">90 jours</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="bonds-overview">
+        @if (BondData.Any())
+        {
+            <div class="bonds-grid">
+                @foreach (var bond in BondData)
+                {
+                    <div class="bond-summary @GetBondTrendClass(bond.Value)">
+                        <div class="bond-country">
+                            <span class="country-flag">@GetCountryFlag(bond.Key)</span>
+                            <span class="country-name">@GetCountryName(bond.Key)</span>
+                        </div>
+                        <div class="bond-yield">
+                            <span class="yield-value">@bond.Value.Price.ToString("F2")%</span>
+                            <span class="yield-change @GetChangeClass(bond.Value.ChangePercent)">
+                                @GetChangePrefix(bond.Value.ChangePercent)@bond.Value.ChangePercent.ToString("F2")%
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="chart-content">
+        @if (IsLoading)
+        {
+            <LoadingSpinner Text="Chargement des rendements..." />
+        }
+        else if (HistoricalData.Any())
+        {
+            <div class="yield-chart">
+                <div class="chart-legend">
+                    @foreach (var symbol in HistoricalData.Keys)
+                    {
+                        <div class="legend-item">
+                            <span class="legend-color" style="background-color: @GetBondColor(symbol)"></span>
+                            <span class="legend-label">@GetCountryName(symbol)</span>
+                        </div>
+                    }
+                </div>
+                
+                <div class="chart-area">
+                    <div class="y-axis">
+                        @for (int i = 0; i <= 4; i++)
+                        {
+                            <div class="y-label">@GetYieldAxisLabel(i)%</div>
+                        }
+                    </div>
+                    
+                    <div class="chart-canvas">
+                        <div class="chart-grid">
+                            @for (int i = 0; i < 5; i++)
+                            {
+                                <div class="grid-line horizontal"></div>
+                            }
+                            @for (int i = 0; i < GetTimePoints(); i++)
+                            {
+                                <div class="grid-line vertical"></div>
+                            }
+                        </div>
+                        
+                        @foreach (var kvp in HistoricalData)
+                        {
+                            <div class="yield-line" style="--line-color: @GetBondColor(kvp.Key)">
+                                @{
+                                    var points = kvp.Value.TakeLast(GetTimePoints()).ToList();
+                                    var normalizedPoints = NormalizeYieldPoints(points);
+                                }
+                                
+                                @* Ligne de rendement *@
+                                <svg class="yield-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                    <path d="@GeneratePath(normalizedPoints)" 
+                                          stroke="@GetBondColor(kvp.Key)" 
+                                          stroke-width="2" 
+                                          fill="none"
+                                          opacity="0.8" />
+                                </svg>
+                                
+                                @* Points de données *@
+                                @foreach (var point in normalizedPoints)
+                                {
+                                    <div class="yield-point" 
+                                         style="left: @(point.X)%; top: @(100 - point.Y)%"
+                                         title="@GetYieldTooltip(kvp.Key, point)">
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                    
+                    <div class="x-axis">
+                        @for (int i = 0; i < GetTimePoints(); i++)
+                        {
+                            <div class="x-label">@GetTimeLabel(i)</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="no-data">
+                <p>Aucune donnée de rendement disponible</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .bond-yield-chart-container {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    .period-selector {
+        min-width: 120px;
+        font-size: 0.9rem;
+        padding: 0.5rem;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        background: var(--card-bg);
+        color: var(--text-color);
+    }
+
+    .bonds-overview {
+        margin-bottom: 2rem;
+    }
+
+    .bonds-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1rem;
+    }
+
+    .bond-summary {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: all 0.2s ease;
+    }
+
+    .bond-summary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .bond-summary.rising {
+        border-left: 4px solid var(--danger-color);
+    }
+
+    .bond-summary.falling {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .bond-country {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .country-flag {
+        font-size: 1.5rem;
+    }
+
+    .country-name {
+        font-weight: 600;
+        color: var(--text-color);
+    }
+
+    .bond-yield {
+        text-align: right;
+    }
+
+    .yield-value {
+        display: block;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--text-color);
+        margin-bottom: 0.25rem;
+    }
+
+    .yield-change {
+        font-size: 0.85rem;
+        font-weight: 600;
+    }
+
+    .yield-change.positive {
+        color: var(--danger-color); /* Rouge pour hausse des taux */
+    }
+
+    .yield-change.negative {
+        color: var(--success-color); /* Vert pour baisse des taux */
+    }
+
+    .yield-change.neutral {
+        color: var(--text-muted);
+    }
+
+    .chart-content {
+        position: relative;
+        min-height: 400px;
+    }
+
+    .yield-chart {
+        height: 400px;
+    }
+
+    .chart-legend {
+        display: flex;
+        justify-content: center;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .legend-color {
+        width: 14px;
+        height: 14px;
+        border-radius: 2px;
+    }
+
+    .legend-label {
+        font-size: 0.9rem;
+        color: var(--text-color);
+        font-weight: 500;
+    }
+
+    .chart-area {
+        display: grid;
+        grid-template-columns: 50px 1fr;
+        grid-template-rows: 1fr 30px;
+        gap: 10px;
+        height: 320px;
+    }
+
+    .y-axis {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding-right: 10px;
+    }
+
+    .y-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 600;
+    }
+
+    .chart-canvas {
+        position: relative;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .chart-grid {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .grid-line {
+        position: absolute;
+        background: var(--border-color);
+        opacity: 0.2;
+    }
+
+    .grid-line.horizontal {
+        width: 100%;
+        height: 1px;
+    }
+
+    .grid-line.vertical {
+        height: 100%;
+        width: 1px;
+    }
+
+    .yield-line {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .yield-svg {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+    }
+
+    .yield-point {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--line-color);
+        border: 2px solid var(--card-bg);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        pointer-events: all;
+        transition: all 0.2s ease;
+    }
+
+    .yield-point:hover {
+        transform: translate(-50%, -50%) scale(1.3);
+        z-index: 10;
+    }
+
+    .x-axis {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+    }
+
+    .x-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .no-data {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 400px;
+        color: var(--text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .bonds-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-area {
+            grid-template-columns: 40px 1fr;
+        }
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Titre du graphique
+    /// </summary>
+    [Parameter] public string Title { get; set; } = "Rendements Obligataires";
+
+    /// <summary>
+    /// Données des obligations
+    /// </summary>
+    [Parameter] public Dictionary<string, MarketData> BondData { get; set; } = new();
+
+    /// <summary>
+    /// Données historiques des rendements
+    /// </summary>
+    [Parameter] public Dictionary<string, List<ChartPoint>> HistoricalData { get; set; } = new();
+
+    /// <summary>
+    /// Indique si le graphique est en cours de chargement
+    /// </summary>
+    [Parameter] public bool IsLoading { get; set; } = false;
+
+    /// <summary>
+    /// Période sélectionnée
+    /// </summary>
+    [Parameter] public int SelectedPeriod { get; set; } = 7;
+
+    private readonly Dictionary<string, string> _bondColors = new()
+    {
+        { "US10Y", "#1f77b4" },
+        { "FR10Y", "#ff7f0e" },
+        { "DE10Y", "#2ca02c" },
+        { "EU10Y", "#d62728" }
+    };
+
+    private readonly Dictionary<string, string> _countryNames = new()
+    {
+        { "US10Y", "États-Unis" },
+        { "FR10Y", "France" },
+        { "DE10Y", "Allemagne" },
+        { "EU10Y", "Union Européenne" }
+    };
+
+    private readonly Dictionary<string, string> _countryFlags = new()
+    {
+        { "US10Y", "🇺🇸" },
+        { "FR10Y", "🇫🇷" },
+        { "DE10Y", "🇩🇪" },
+        { "EU10Y", "🇪🇺" }
+    };
+
+    private string GetBondColor(string symbol)
+    {
+        return _bondColors.TryGetValue(symbol, out var color) ? color : "#6b7280";
+    }
+
+    private string GetCountryName(string symbol)
+    {
+        return _countryNames.TryGetValue(symbol, out var name) ? name : symbol;
+    }
+
+    private string GetCountryFlag(string symbol)
+    {
+        return _countryFlags.TryGetValue(symbol, out var flag) ? flag : "🏛️";
+    }
+
+    private string GetBondTrendClass(MarketData bond)
+    {
+        return bond.ChangePercent switch
+        {
+            > 0 => "rising",
+            < 0 => "falling",
+            _ => ""
+        };
+    }
+
+    private string GetChangeClass(decimal changePercent)
+    {
+        return changePercent switch
+        {
+            > 0 => "positive",
+            < 0 => "negative",
+            _ => "neutral"
+        };
+    }
+
+    private string GetChangePrefix(decimal changePercent)
+    {
+        return changePercent >= 0 ? "+" : "";
+    }
+
+    private int GetTimePoints()
+    {
+        return Math.Min(SelectedPeriod, 10);
+    }
+
+    private List<NormalizedYieldPoint> NormalizeYieldPoints(List<ChartPoint> points)
+    {
+        if (!points.Any()) return new List<NormalizedYieldPoint>();
+
+        var allValues = HistoricalData.SelectMany(kvp => kvp.Value.TakeLast(GetTimePoints()).Select(p => p.Value)).ToList();
+        var minValue = allValues.Min();
+        var maxValue = allValues.Max();
+        var range = maxValue - minValue;
+
+        if (range == 0) range = 1;
+
+        var normalized = new List<NormalizedYieldPoint>();
+        
+        for (int i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var x = (double)i / (points.Count - 1) * 100;
+            var y = (double)(point.Value - minValue) / range * 100;
+            
+            normalized.Add(new NormalizedYieldPoint
+            {
+                X = x,
+                Y = y,
+                OriginalValue = point.Value,
+                Date = point.Date
+            });
+        }
+
+        return normalized;
+    }
+
+    private string GeneratePath(List<NormalizedYieldPoint> points)
+    {
+        if (!points.Any()) return "";
+
+        var path = $"M {points[0].X} {100 - points[0].Y}";
+        
+        for (int i = 1; i < points.Count; i++)
+        {
+            path += $" L {points[i].X} {100 - points[i].Y}";
+        }
+
+        return path;
+    }
+
+    private string GetYieldAxisLabel(int index)
+    {
+        var allValues = HistoricalData.SelectMany(kvp => kvp.Value.TakeLast(GetTimePoints()).Select(p => p.Value)).ToList();
+        if (!allValues.Any()) return "0.0";
+
+        var min = allValues.Min();
+        var max = allValues.Max();
+        var range = max - min;
+        var value = min + (range * (4 - index) / 4);
+
+        return value.ToString("F1");
+    }
+
+    private string GetTimeLabel(int index)
+    {
+        var date = DateTime.Now.AddDays(-GetTimePoints() + index + 1);
+        return date.ToString("dd/MM");
+    }
+
+    private string GetYieldTooltip(string symbol, NormalizedYieldPoint point)
+    {
+        return $"{GetCountryName(symbol)}: {point.OriginalValue:F2}% ({point.Date:dd/MM HH:mm})";
+    }
+
+    private class NormalizedYieldPoint
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public decimal OriginalValue { get; set; }
+        public DateTime Date { get; set; }
+    }
+} 

@@ -1,0 +1,118 @@
+<div class="nav-menu">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                <span class="nav-icon">🏠</span>
+                <span class="nav-text">Dashboard</span>
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="/markets">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">Marchés</span>
+            </NavLink>
+        </div>
+        
+        <div class="nav-section">
+            <h6 class="nav-section-title">Catégories</h6>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/markets?category=indices">
+                    <span class="nav-icon">📈</span>
+                    <span class="nav-text">Indices</span>
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/markets?category=crypto">
+                    <span class="nav-icon">₿</span>
+                    <span class="nav-text">Crypto</span>
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/markets?category=commodities">
+                    <span class="nav-icon">🥇</span>
+                    <span class="nav-text">Matières premières</span>
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="/markets?category=bonds">
+                    <span class="nav-icon">🏛️</span>
+                    <span class="nav-text">Obligations</span>
+                </NavLink>
+            </div>
+        </div>
+    </nav>
+</div>
+
+<style>
+    .nav-menu {
+        height: 100vh;
+        background: var(--nav-bg);
+        border-right: 1px solid var(--border-color);
+        padding: 1rem 0;
+    }
+
+    .nav-section {
+        margin-top: 2rem;
+        border-top: 1px solid var(--border-color);
+        padding-top: 1rem;
+    }
+
+    .nav-section-title {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+        padding: 0 1rem;
+    }
+
+    .nav-item {
+        margin-bottom: 0.25rem;
+    }
+
+    .nav-link {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        color: var(--text-color);
+        text-decoration: none;
+        border-radius: 0.375rem;
+        transition: all 0.2s ease;
+        font-size: 0.95rem;
+        font-weight: 500;
+    }
+
+    .nav-link:hover {
+        background: var(--nav-hover-bg);
+        color: var(--nav-hover-color);
+        text-decoration: none;
+    }
+
+    .nav-link.active {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .nav-icon {
+        margin-right: 0.75rem;
+        font-size: 1.1rem;
+        width: 1.5rem;
+        text-align: center;
+    }
+
+    .nav-text {
+        flex: 1;
+    }
+</style>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+} 

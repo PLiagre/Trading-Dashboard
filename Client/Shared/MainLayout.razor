@@ -1,0 +1,50 @@
+@inherits LayoutView
+@inject ThemeService ThemeService
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="page @ThemeService.GetThemeClasses()">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="page-title">📈 Trading Dashboard</h1>
+                <button class="btn btn-outline-secondary theme-toggle" @onclick="ToggleTheme">
+                    <span class="theme-icon">@ThemeService.GetThemeIcon()</span>
+                    <span class="theme-text">@ThemeService.GetThemeText()</span>
+                </button>
+            </div>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+<div id="blazor-error-ui">
+    Une erreur inattendue s'est produite. Cette page pourrait ne plus répondre jusqu'à ce qu'elle soit rechargée.
+    <a href="" class="reload">Recharger</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await ThemeService.InitializeAsync();
+        ThemeService.ThemeChanged += StateHasChanged;
+    }
+
+    private async Task ToggleTheme()
+    {
+        await ThemeService.ToggleThemeAsync();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        ThemeService.ThemeChanged -= StateHasChanged;
+    }
+} 

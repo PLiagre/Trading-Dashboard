@@ -1,0 +1,296 @@
+@* Carte synthétique pour afficher les informations d'un actif financier *@
+
+<div class="market-card @GetCardClass()">
+    <div class="market-card-header">
+        <div class="market-info">
+            <h4 class="market-name">@Data.Name</h4>
+            <span class="market-symbol">@Data.Symbol</span>
+        </div>
+        <div class="market-trend">
+            <span class="trend-icon">@GetTrendIcon()</span>
+        </div>
+    </div>
+    
+    <div class="market-card-body">
+        <div class="market-price">
+            <span class="price-value">@FormatPrice(Data.Price)</span>
+            <span class="price-currency">@Data.Currency</span>
+        </div>
+        
+        <div class="market-change">
+            <span class="change-value @GetChangeClass()">
+                @GetChangePrefix()@FormatChange(Data.Change) @Data.Currency
+            </span>
+            <span class="change-percent @GetChangeClass()">
+                (@GetChangePrefix()@Data.ChangePercent.ToString("F2")%)
+            </span>
+        </div>
+        
+        <div class="market-meta">
+            <small class="last-updated">
+                Mis à jour: @Data.LastUpdated.ToString("HH:mm:ss")
+            </small>
+        </div>
+    </div>
+    
+    @if (ShowMiniChart)
+    {
+        <div class="market-chart">
+            <div class="mini-chart @GetChangeClass()">
+                <!-- Graphique simplifié avec des barres -->
+                @for (int i = 0; i < 10; i++)
+                {
+                    <div class="chart-bar" style="height: @GetRandomHeight()%"></div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .market-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .market-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        border-color: var(--primary-color);
+    }
+
+    .market-card.positive {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .market-card.negative {
+        border-left: 4px solid var(--danger-color);
+    }
+
+    .market-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .market-info {
+        flex: 1;
+    }
+
+    .market-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0;
+        margin-bottom: 0.25rem;
+    }
+
+    .market-symbol {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 500;
+        background: var(--bg-secondary);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+    }
+
+    .market-trend {
+        display: flex;
+        align-items: center;
+    }
+
+    .trend-icon {
+        font-size: 1.5rem;
+        animation: pulse 2s infinite;
+    }
+
+    .market-price {
+        display: flex;
+        align-items: baseline;
+        margin-bottom: 0.5rem;
+    }
+
+    .price-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--text-color);
+    }
+
+    .price-currency {
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        margin-left: 0.5rem;
+    }
+
+    .market-change {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .change-value, .change-percent {
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .change-value.positive, .change-percent.positive {
+        color: var(--success-color);
+    }
+
+    .change-value.negative, .change-percent.negative {
+        color: var(--danger-color);
+    }
+
+    .change-value.neutral, .change-percent.neutral {
+        color: var(--text-muted);
+    }
+
+    .market-meta {
+        border-top: 1px solid var(--border-color);
+        padding-top: 0.75rem;
+    }
+
+    .last-updated {
+        color: var(--text-muted);
+        font-size: 0.8rem;
+    }
+
+    .market-chart {
+        margin-top: 1rem;
+        height: 40px;
+    }
+
+    .mini-chart {
+        display: flex;
+        align-items: end;
+        height: 100%;
+        gap: 2px;
+    }
+
+    .chart-bar {
+        flex: 1;
+        min-height: 4px;
+        border-radius: 2px;
+        transition: all 0.3s ease;
+    }
+
+    .mini-chart.positive .chart-bar {
+        background: var(--success-color);
+        opacity: 0.7;
+    }
+
+    .mini-chart.negative .chart-bar {
+        background: var(--danger-color);
+        opacity: 0.7;
+    }
+
+    .mini-chart.neutral .chart-bar {
+        background: var(--text-muted);
+        opacity: 0.5;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .market-card {
+            padding: 1rem;
+        }
+        
+        .price-value {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Données de marché à afficher
+    /// </summary>
+    [Parameter, EditorRequired] public MarketData Data { get; set; } = null!;
+
+    /// <summary>
+    /// Indique si le mini-graphique doit être affiché
+    /// </summary>
+    [Parameter] public bool ShowMiniChart { get; set; } = true;
+
+    /// <summary>
+    /// Callback appelé lors du clic sur la carte
+    /// </summary>
+    [Parameter] public EventCallback<MarketData> OnClick { get; set; }
+
+    private Random _random = new Random();
+
+    private string GetCardClass()
+    {
+        return Data.ChangePercent switch
+        {
+            > 0 => "positive",
+            < 0 => "negative",
+            _ => "neutral"
+        };
+    }
+
+    private string GetChangeClass()
+    {
+        return Data.ChangePercent switch
+        {
+            > 0 => "positive",
+            < 0 => "negative",
+            _ => "neutral"
+        };
+    }
+
+    private string GetTrendIcon()
+    {
+        return Data.ChangePercent switch
+        {
+            > 0 => "📈",
+            < 0 => "📉",
+            _ => "➖"
+        };
+    }
+
+    private string GetChangePrefix()
+    {
+        return Data.Change >= 0 ? "+" : "";
+    }
+
+    private string FormatPrice(decimal price)
+    {
+        return Data.Category == MarketCategory.Bonds
+            ? price.ToString("F2")
+            : price.ToString("N2");
+    }
+
+    private string FormatChange(decimal change)
+    {
+        return Data.Category == MarketCategory.Bonds
+            ? change.ToString("F2")
+            : change.ToString("N2");
+    }
+
+    private string GetRandomHeight()
+    {
+        return _random.Next(20, 100).ToString();
+    }
+
+    private async Task HandleClick()
+    {
+        if (OnClick.HasDelegate)
+        {
+            await OnClick.InvokeAsync(Data);
+        }
+    }
+} 

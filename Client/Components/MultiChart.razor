@@ -1,0 +1,404 @@
+@* Graphique multi-actifs avec courbes superposées *@
+
+<div class="multi-chart-container">
+    <div class="chart-header">
+        <h3 class="chart-title">@Title</h3>
+        <div class="chart-legend">
+            @foreach (var symbol in ChartData.Keys)
+            {
+                <div class="legend-item">
+                    <span class="legend-color" style="background-color: @GetColorForSymbol(symbol)"></span>
+                    <span class="legend-label">@GetLabelForSymbol(symbol)</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="chart-content">
+        @if (IsLoading)
+        {
+            <LoadingSpinner Text="Chargement des données..." />
+        }
+        else if (ChartData.Any())
+        {
+            <div class="chart-canvas">
+                <div class="chart-y-axis">
+                    @for (int i = 0; i <= 4; i++)
+                    {
+                        <div class="y-axis-label">@GetYAxisLabel(i)</div>
+                    }
+                </div>
+                
+                <div class="chart-area">
+                    <div class="chart-grid">
+                        @for (int i = 0; i < 5; i++)
+                        {
+                            <div class="grid-line horizontal"></div>
+                        }
+                        @for (int i = 0; i < 7; i++)
+                        {
+                            <div class="grid-line vertical"></div>
+                        }
+                    </div>
+                    
+                    @foreach (var kvp in ChartData)
+                    {
+                        <div class="chart-line" style="--line-color: @GetColorForSymbol(kvp.Key)">
+                            @{
+                                var points = kvp.Value;
+                                var normalizedPoints = NormalizePoints(points);
+                            }
+                            @for (int i = 0; i < normalizedPoints.Count - 1; i++)
+                            {
+                                var point1 = normalizedPoints[i];
+                                var point2 = normalizedPoints[i + 1];
+                                
+                                <div class="line-segment" 
+                                     style="left: @(point1.X)%; 
+                                            top: @(100 - point1.Y)%; 
+                                            width: @(point2.X - point1.X)%; 
+                                            transform: rotate(@(GetAngle(point1, point2))deg);
+                                            transform-origin: left center;">
+                                </div>
+                            }
+                            
+                            @foreach (var point in normalizedPoints)
+                            {
+                                <div class="chart-point" 
+                                     style="left: @(point.X)%; top: @(100 - point.Y)%"
+                                     title="@GetPointTooltip(kvp.Key, point)">
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+                
+                <div class="chart-x-axis">
+                    @for (int i = 0; i < 7; i++)
+                    {
+                        <div class="x-axis-label">@GetXAxisLabel(i)</div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="no-data">
+                <p>Aucune donnée disponible</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .multi-chart-container {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .chart-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    .chart-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid var(--card-bg);
+    }
+
+    .legend-label {
+        font-size: 0.9rem;
+        color: var(--text-color);
+        font-weight: 500;
+    }
+
+    .chart-content {
+        position: relative;
+        min-height: 300px;
+    }
+
+    .chart-canvas {
+        display: grid;
+        grid-template-columns: 60px 1fr;
+        grid-template-rows: 1fr 30px;
+        gap: 10px;
+        height: 300px;
+    }
+
+    .chart-y-axis {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding-right: 10px;
+    }
+
+    .y-axis-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .chart-area {
+        position: relative;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+    }
+
+    .chart-grid {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .grid-line {
+        position: absolute;
+        background: var(--border-color);
+        opacity: 0.3;
+    }
+
+    .grid-line.horizontal {
+        width: 100%;
+        height: 1px;
+    }
+
+    .grid-line.vertical {
+        height: 100%;
+        width: 1px;
+    }
+
+    .grid-line.horizontal:nth-child(1) { top: 0%; }
+    .grid-line.horizontal:nth-child(2) { top: 25%; }
+    .grid-line.horizontal:nth-child(3) { top: 50%; }
+    .grid-line.horizontal:nth-child(4) { top: 75%; }
+    .grid-line.horizontal:nth-child(5) { top: 100%; }
+
+    .grid-line.vertical:nth-child(6) { left: 0%; }
+    .grid-line.vertical:nth-child(7) { left: 16.67%; }
+    .grid-line.vertical:nth-child(8) { left: 33.33%; }
+    .grid-line.vertical:nth-child(9) { left: 50%; }
+    .grid-line.vertical:nth-child(10) { left: 66.67%; }
+    .grid-line.vertical:nth-child(11) { left: 83.33%; }
+    .grid-line.vertical:nth-child(12) { left: 100%; }
+
+    .chart-line {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+    }
+
+    .line-segment {
+        position: absolute;
+        height: 2px;
+        background: var(--line-color);
+        border-radius: 1px;
+        opacity: 0.8;
+    }
+
+    .chart-point {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: var(--line-color);
+        border: 2px solid var(--card-bg);
+        border-radius: 50%;
+        transform: translate(-50%, -50%);
+        cursor: pointer;
+        pointer-events: all;
+        transition: all 0.2s ease;
+    }
+
+    .chart-point:hover {
+        transform: translate(-50%, -50%) scale(1.5);
+        z-index: 10;
+    }
+
+    .chart-x-axis {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+    }
+
+    .x-axis-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 500;
+    }
+
+    .no-data {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+        color: var(--text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .chart-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .chart-legend {
+            gap: 0.5rem;
+        }
+        
+        .chart-canvas {
+            grid-template-columns: 50px 1fr;
+        }
+    }
+</style>
+
+@code {
+    /// <summary>
+    /// Titre du graphique
+    /// </summary>
+    [Parameter] public string Title { get; set; } = "Évolution des cours";
+
+    /// <summary>
+    /// Données des graphiques par symbole
+    /// </summary>
+    [Parameter] public Dictionary<string, List<ChartPoint>> ChartData { get; set; } = new();
+
+    /// <summary>
+    /// Indique si le graphique est en cours de chargement
+    /// </summary>
+    [Parameter] public bool IsLoading { get; set; } = false;
+
+    /// <summary>
+    /// Hauteur du graphique en pixels
+    /// </summary>
+    [Parameter] public int Height { get; set; } = 300;
+
+    private readonly Dictionary<string, string> _symbolColors = new()
+    {
+        { "BTC", "#f2a900" },
+        { "ETH", "#627eea" },
+        { "CAC40", "#4f46e5" },
+        { "SP500", "#059669" },
+        { "NASDAQ", "#dc2626" },
+        { "GOLD", "#fbbf24" }
+    };
+
+    private readonly Dictionary<string, string> _symbolLabels = new()
+    {
+        { "BTC", "Bitcoin" },
+        { "ETH", "Ethereum" },
+        { "CAC40", "CAC 40" },
+        { "SP500", "S&P 500" },
+        { "NASDAQ", "NASDAQ" },
+        { "GOLD", "Or" }
+    };
+
+    private string GetColorForSymbol(string symbol)
+    {
+        return _symbolColors.TryGetValue(symbol, out var color) ? color : "#6b7280";
+    }
+
+    private string GetLabelForSymbol(string symbol)
+    {
+        return _symbolLabels.TryGetValue(symbol, out var label) ? label : symbol;
+    }
+
+    private List<NormalizedPoint> NormalizePoints(List<ChartPoint> points)
+    {
+        if (!points.Any()) return new List<NormalizedPoint>();
+
+        var minValue = points.Min(p => p.Value);
+        var maxValue = points.Max(p => p.Value);
+        var range = maxValue - minValue;
+
+        if (range == 0) range = 1; // Éviter la division par zéro
+
+        var normalized = new List<NormalizedPoint>();
+        
+        for (int i = 0; i < points.Count; i++)
+        {
+            var point = points[i];
+            var x = (double)i / (points.Count - 1) * 100;
+            var y = (double)(point.Value - minValue) / range * 100;
+            
+            normalized.Add(new NormalizedPoint
+            {
+                X = x,
+                Y = y,
+                OriginalValue = point.Value,
+                Date = point.Date
+            });
+        }
+
+        return normalized;
+    }
+
+    private double GetAngle(NormalizedPoint point1, NormalizedPoint point2)
+    {
+        var deltaX = point2.X - point1.X;
+        var deltaY = point2.Y - point1.Y;
+        return Math.Atan2(deltaY, deltaX) * 180 / Math.PI;
+    }
+
+    private string GetYAxisLabel(int index)
+    {
+        // Calcul simple pour l'axe Y
+        var allValues = ChartData.SelectMany(kvp => kvp.Value.Select(p => p.Value)).ToList();
+        if (!allValues.Any()) return "0";
+
+        var min = allValues.Min();
+        var max = allValues.Max();
+        var range = max - min;
+        var value = min + (range * (4 - index) / 4);
+
+        return value.ToString("N0");
+    }
+
+    private string GetXAxisLabel(int index)
+    {
+        var date = DateTime.Now.AddDays(-6 + index);
+        return date.ToString("dd/MM");
+    }
+
+    private string GetPointTooltip(string symbol, NormalizedPoint point)
+    {
+        return $"{GetLabelForSymbol(symbol)}: {point.OriginalValue:N2} ({point.Date:dd/MM HH:mm})";
+    }
+
+    private class NormalizedPoint
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public decimal OriginalValue { get; set; }
+        public DateTime Date { get; set; }
+    }
+} 
