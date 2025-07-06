@@ -1,0 +1,40 @@
+@* Layout principal - doit rester en mode statique pour accepter le paramètre Body *@
+@inherits LayoutComponentBase
+
+<div class="d-flex">
+    <!-- Sidebar -->
+    <nav class="navbar navbar-dark bg-dark flex-column sidebar">
+        <NavMenu />
+    </nav>
+
+    <!-- Contenu principal -->
+    <div class="flex-grow-1">
+        <!-- Header -->
+        <header class="navbar navbar-dark bg-primary">
+            <div class="container-fluid">
+                <span class="navbar-brand mb-0 h1">📈 Trading Dashboard</span>
+                <div class="ms-auto">
+                    <ThemeToggle />
+                    <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" class="btn btn-outline-light btn-sm ms-2">
+                        📚 Aide
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenu de la page -->
+        <main class="container-fluid py-4">
+            @Body
+        </main>
+    </div>
+</div>
+
+<div id="blazor-error-ui">
+    Une erreur inattendue s'est produite. Cette page peut ne plus répondre jusqu'à rechargement.
+    <a href="" class="reload">Recharger</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+@code {
+    // Layout principal avec Bootstrap
+} 

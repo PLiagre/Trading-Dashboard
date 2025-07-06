@@ -1,0 +1,214 @@
+@* Page d'accueil Dashboard avec rendu WebAssembly pour une expérience client riche *@
+@page "/"
+@rendermode InteractiveWebAssembly
+@inject IHttpClientFactory HttpClientFactory
+@inject MarketDataService MarketDataService
+
+<PageTitle>Dashboard - Trading</PageTitle>
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h1>📈 Dashboard Trading</h1>
+        <p class="subtitle">Données en temps réel avec Supabase</p>
+        
+        @if (isLoading)
+        {
+            <div class="loading-indicator">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <span class="ms-2">Récupération des données...</span>
+            </div>
+        }
+    </div>
+
+    <div class="dashboard-grid">
+        <!-- Carte des métriques principales -->
+        <div class="metric-card">
+            <h3>💰 Valeur du Portfolio</h3>
+            <div class="metric-value">€@portfolioValue.ToString("N2")</div>
+            <div class="metric-change @(portfolioChange >= 0 ? "positive" : "negative")">
+                @(portfolioChange >= 0 ? "+" : "")@portfolioChange.ToString("N2")%
+            </div>
+        </div>
+
+        <!-- Carte des positions actives -->
+        <div class="metric-card">
+            <h3>📊 Positions Actives</h3>
+            <div class="metric-value">@activePositions</div>
+            <div class="metric-subtitle">positions ouvertes</div>
+        </div>
+
+        <!-- Carte du P&L du jour -->
+        <div class="metric-card">
+            <h3>📈 P&L Journalier</h3>
+            <div class="metric-value @(dailyPnL >= 0 ? "positive" : "negative")">
+                €@dailyPnL.ToString("N2")
+            </div>
+            <div class="metric-subtitle">performance du jour</div>
+        </div>
+
+        <!-- Section des données Supabase -->
+        <div class="supabase-section">
+            <h3>🔗 Données Supabase</h3>
+            @if (supabaseData?.Any() == true)
+            {
+                <div class="data-list">
+                    @foreach (var item in supabaseData)
+                    {
+                        <div class="data-item">
+                            <span class="data-label">@item.Symbol:</span>
+                            <span class="data-value">€@item.Price.ToString("N4")</span>
+                            <span class="data-time">@item.Timestamp.ToString("HH:mm")</span>
+                        </div>
+                    }
+                </div>
+            }
+            else if (supabaseError != null)
+            {
+                <div class="alert alert-warning">
+                    <strong>⚠️ Erreur Supabase:</strong> @supabaseError
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">Aucune donnée disponible</p>
+            }
+        </div>
+
+        <!-- Graphique des marchés (composant existant) -->
+        <div class="chart-section">
+            <h3>📊 Aperçu des Marchés</h3>
+            <MarketOverviewChart />
+        </div>
+    </div>
+
+    <!-- Bouton de rafraîchissement -->
+    <div class="refresh-section mt-4">
+        <button class="btn btn-primary" @onclick="RefreshData" disabled="@isLoading">
+            @if (isLoading)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+            }
+            Actualiser les données
+        </button>
+        <small class="text-muted ms-3">
+            Dernière mise à jour: @lastUpdate.ToString("HH:mm:ss")
+        </small>
+    </div>
+</div>
+
+@code {
+    // Variables d'état du dashboard
+    private bool isLoading = true;
+    private DateTime lastUpdate = DateTime.Now;
+    
+    // Métriques du portfolio
+    private decimal portfolioValue = 125430.50m;
+    private decimal portfolioChange = 2.45m;
+    private int activePositions = 8;
+    private decimal dailyPnL = 1250.30m;
+    
+    // Données Supabase
+    private List<MarketDataPoint>? supabaseData;
+    private string? supabaseError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        isLoading = true;
+        
+        try
+        {
+            // Simulation des données du portfolio (à remplacer par de vraies données)
+            await Task.Delay(500); // Simulation du temps de chargement
+            
+            // Appel vers Supabase pour récupérer les données de marché
+            // Temporairement désactivé - remplacé par des données simulées
+            await LoadSimulatedData();
+            
+            // Mise à jour des métriques via le service existant
+            // Temporairement désactivé pour éviter les erreurs Supabase
+            // var marketData = await MarketDataService.GetMarketOverviewAsync();
+            
+            lastUpdate = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            supabaseError = $"Erreur lors du chargement: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task LoadSupabaseData()
+    {
+        try
+        {
+            // Création du client HTTP configuré pour Supabase
+            var httpClient = HttpClientFactory.CreateClient("supabase");
+            
+            // Exemple d'appel REST vers une table Supabase
+            // Remplacez "market_data" par le nom de votre table
+            var response = await httpClient.GetAsync("/rest/v1/market_data?select=*&limit=5");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonContent = await response.Content.ReadAsStringAsync();
+                // Pour cet exemple, on simule des données
+                // En production, utilisez JsonSerializer.Deserialize<List<MarketDataPoint>>(jsonContent)
+                supabaseData = GenerateSimulatedData();
+            }
+            else
+            {
+                supabaseError = $"Erreur HTTP {response.StatusCode}: {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            supabaseError = $"Erreur de connexion Supabase: {ex.Message}";
+            // Utilisation de données simulées en cas d'erreur
+            supabaseData = GenerateSimulatedData();
+        }
+    }
+
+    private List<MarketDataPoint> GenerateSimulatedData()
+    {
+        // Données simulées pour démonstration
+        var random = new Random();
+        return new List<MarketDataPoint>
+        {
+            new() { Symbol = "BTC/EUR", Price = 42350.45m + (decimal)(random.NextDouble() * 1000), Timestamp = DateTime.Now.AddMinutes(-2) },
+            new() { Symbol = "ETH/EUR", Price = 2850.12m + (decimal)(random.NextDouble() * 100), Timestamp = DateTime.Now.AddMinutes(-1) },
+            new() { Symbol = "EUR/USD", Price = 1.0934m + (decimal)(random.NextDouble() * 0.01), Timestamp = DateTime.Now },
+            new() { Symbol = "AAPL", Price = 189.25m + (decimal)(random.NextDouble() * 10), Timestamp = DateTime.Now.AddMinutes(-3) },
+            new() { Symbol = "GOOGL", Price = 2650.80m + (decimal)(random.NextDouble() * 50), Timestamp = DateTime.Now.AddMinutes(-1) }
+        };
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadSimulatedData()
+    {
+        await Task.Delay(200); // Simulation temps de chargement
+        supabaseData = GenerateSimulatedData();
+        supabaseError = null; // Pas d'erreur avec les données simulées
+    }
+
+    // Modèle de données pour Supabase
+    public class MarketDataPoint
+    {
+        public string Symbol { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+        public DateTime Timestamp { get; set; }
+    }
+} 

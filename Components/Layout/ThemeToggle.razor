@@ -1,0 +1,39 @@
+@* Composant de basculement de thème - version statique avec JavaScript *@
+
+<button class="btn btn-outline-light btn-sm" onclick="toggleTheme()" title="Changer le thème">
+    <span id="theme-icon">🌙</span>
+</button>
+
+<script>
+    function toggleTheme() {
+        const body = document.body;
+        const icon = document.getElementById('theme-icon');
+        
+        if (body.classList.contains('dark-theme')) {
+            body.classList.remove('dark-theme');
+            body.classList.add('light-theme');
+            icon.textContent = '☀️';
+            localStorage.setItem('theme', 'light');
+        } else {
+            body.classList.remove('light-theme');
+            body.classList.add('dark-theme');
+            icon.textContent = '🌙';
+            localStorage.setItem('theme', 'dark');
+        }
+    }
+
+    // Initialisation du thème au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        const body = document.body;
+        const icon = document.getElementById('theme-icon');
+        
+        if (savedTheme === 'dark') {
+            body.classList.add('dark-theme');
+            icon.textContent = '🌙';
+        } else {
+            body.classList.add('light-theme');
+            icon.textContent = '☀️';
+        }
+    });
+</script> 

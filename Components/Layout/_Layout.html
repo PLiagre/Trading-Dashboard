@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trading Dashboard</title>
+    
+    <!-- PWA Meta tags -->
+    <meta name="description" content="Dashboard de trading moderne avec données en temps réel" />
+    <meta name="theme-color" content="#1a1a2e" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
+    
+    <!-- Styles -->
+    <base href="/" />
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="app.css" />
+    <link rel="stylesheet" href="TradingDashboard.styles.css" />
+    
+    <component type="typeof(HeadOutlet)" render-mode="Static" />
+</head>
+
+<body>
+    <div id="app">
+        <component type="typeof(App)" render-mode="Static" />
+    </div>
+
+    <div id="blazor-error-ui">
+        Une erreur inattendue s'est produite. Cette page peut ne plus répondre jusqu'à rechargement.
+        <a href="" class="reload">Recharger</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <!-- Scripts Blazor pour le mode hybride -->
+    <script src="_framework/blazor.web.js"></script>
+    
+    <!-- Service Worker pour PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js');
+        }
+    </script>
+</body>
+
+</html> 
